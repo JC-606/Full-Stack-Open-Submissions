@@ -1,79 +1,104 @@
-import { useState, useEffect } from 'react'
-import axios from 'axios'
+import axios from "axios"
+import { useState, useEffect } from "react"
 
-import './App.css'
+const Country = ({ country }) => {
+  const [weather, setWeather] = useState(null)
 
-function App() {
-  const [inputValue, setInputValue] = useState("");
-  const [countries, setCountries] = useState(null);
-  const [result, setResult] = useState([]);
-  const [details, setDetails] = useState();
-  const [country, setCountry] = useState();
+  const languages = Object.values(country.languages)
+  const flagUrl = country.flags.png
+  const capital = country.capital[0]
 
   useEffect(() => {
-    const request = axios.get('https://studies.cs.helsinki.fi/restcountries/api/all');
-    request.then(response => {
-      setCountries(response.data.map(country => country.name.common));
-    });
-  },[])
+    const API_KEY = process.env.REACT_APP_API_KEY
+    const lat = country.capitalInfo.latlng[0]
+    const lon = country.capitalInfo.latlng[1]
+    const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&units=metric&appid=${API_KEY}`
+    axios.get(url).then(({ data }) => {
+      setWeather(data)
+    })
+  }, [])
 
-  useEffect(() => {
-    if (country) {
-      const request = axios.get(`https://studies.cs.helsinki.fi/restcountries/api/name/${country}`);
-      request.then(response => setDetails(response.data));
-    }
-  },[country])
-
-  const handleSearch = (event) => {
-    const inputValue = event.target.value;
-    setInputValue(inputValue);
-    if (countries) {
-      const output = countries.filter((country) => country.toLowerCase().includes(inputValue.toLowerCase()));
-      setResult(output);
-      if (output.length === 1) {
-        setCountry(output[0]);
-      } else {
-        setCountry(null);
-      }
-    }
+  if (!weather) {
+    return null
   }
 
-  const renderResult = () => {
-    if (result.length > 10) {
-      return <div><p>Too many matches, specify another filter</p></div>
-    } else if (result.length <= 10 && result.length > 1) {
-      return (
-        result.map((item, index) => (
-          <div key={index}>
-            <p>{item} <button onClick={()=>setCountry(item)}>show</button></p>
-          </div>
-        ))
-      )
-    }
+  const icon = weather.weather[0].icon
+  const weatherIconUrl = `http://openweathermap.org/img/wn/${icon}@2x.png`
+
+  return (
+    <div>
+      <h2>{country.name.common}</h2>
+
+      <p>population {country.population}</p>
+      <p>capital {capital}</p>
+
+      <h4>languages</h4>
+
+      <ul>
+        {languages.map(language => <li key={language}>{language}</li>)}  
+      </ul>
+
+      <img src={flagUrl} width='200' />
+
+      <h4>Weather in {capital}</h4>
+
+      <p>temperature {weather.main.temp} Celsius</p>
+
+      <img src={weatherIconUrl} width='80' />
+
+      <p>wind {weather.wind.speed} m/s</p>
+    </div>
+  )
+}
+
+const CountryList = ({ countries, showCountry }) => {
+  if ( countries.length>10) {
+    return (
+      <div>
+        Too many matches, specify another filter
+      </div>
+    )
+  }
+
+  if ( countries.length===1) {
+    return <Country country={countries[0]} />
   }
 
   return (
     <div>
-      <div>Find countries <input type='text' value={inputValue} onChange={handleSearch}/></div>
-      {renderResult()}
-      {country && details?
-        <div>
-          <h1>{details.name.common}</h1>
-          <p>Capital: {details.capital[0]}</p>
-          <p>Area: {details.area}</p>
-          <h3>Languages:</h3>
-          <ul>
-            {Object.entries(details.languages).map(([key, value], index) => (
-              <li key={index}>
-                {value}
-              </li>
-            ))}
-          </ul>
-          <img src={details.flags.png} alt={details.flags.alt} />
-        </div>
-        :
-        <></>
-      }
+      {countries.map(c =>
+        <p key={c.fifa}>
+          {c.name.common}
+          <button onClick={() => showCountry(c.name.common)}>
+            show
+          </button>
+        </p>
+      )}
+    </div>
+  )
+}
+ 
+const App = () => {
+  const [search, setSearch] = useState('fi')
+  const [countries, setCountries] = useState([])
+
+  useEffect(() => {
+    axios.get('https://restcountries.com/v3.1/all').then(({ data }) => {
+      setCountries(data)
+    })
+  }, [])
+
+  const matchedContries = countries.filter(c => c.name.common.toLowerCase().includes(search.toLocaleLowerCase()))
+
+  return (
+    <div>
+      <div>
+        find country <input value={search} onChange={({ target }) => setSearch(target.value)} />
+      </div>
+      <CountryList 
+        countries={matchedContries}
+        showCountry={setSearch}
+      />
     </div>
   )
 }

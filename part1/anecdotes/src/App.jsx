@@ -14,11 +14,20 @@ const App = () => {
    
   const [selected, setSelected] = useState(0)
   const [points, setPoints] = useState(Array(anecdotes.length).fill(0))
+  // trick to generate a array with zeros that has the size of anecdotes
+  // const [votes, setVotes] = useState(anecdotes.map(_ => 0))
   const [top, setTop] = useState(0)
 
   const getRandomInt = (max) => {
     return Math.floor(Math.random()*max)
   }
+  // ensures the number generated is always different
+  // const pickRandom = () => {
+  //   while (true) {
+  //     const possibleNext = Math.floor(Math.random() * anecdotes.length)
+  //     if (possibleNext !== selected) return possibleNext
+  //   }
+  // }
   const handleNext = () => {
     setSelected(getRandomInt(anecdotes.length))
   }
@@ -27,6 +36,10 @@ const App = () => {
     newPoints[selected] += 1
     setPoints(newPoints)
     findMostVotes(newPoints)
+    // simpler way to find most votes
+    // if (newVotes[selected] > votes[mostVotes]) {
+    //   setMostVotes(selected)
+    // }
   }
   const findMostVotes = (points) => {
     for (let i = 0; i < points.length; i++) {
